@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador Padrón Capiata - 205k registros</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #1a73e8;
+            color: white;
+            padding: 20px 25px;
+        }
+        .header h1 { margin: 0 0 5px 0; font-size: 24px; }
+        .header p { margin: 0; opacity: 0.9; font-size: 14px; }
+        .buscador {
+            padding: 20px 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .grupo {
+            flex: 1;
+            min-width: 180px;
+        }
+        .grupo label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5f6368;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .grupo input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .grupo input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            height: 42px;
+        }
+        button:hover { background: #1557b0; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .resultados-info {
+            padding: 12px 25px;
+            background: #e8f0fe;
+            font-size: 14px;
+            color: #1a73e8;
+            border-bottom: 1px solid #dadce0;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .tabla-container {
+            overflow-x: auto;
+            max-height: 550px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            background: #f1f3f4;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #3c4043;
+            border-bottom: 1px solid #dadce0;
+            position: sticky;
+            top: 0;
+            background-color: #f1f3f4;
+        }
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #202124;
+        }
+        tr:hover { background: #f8f9fa; }
+        .voto-si {
+            background: #e6f4ea;
+            color: #137333;
+            padding: 4px 8px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .voto-no {
+            background: #fce8e6;
+            color: #c5221f;
+            padding: 4px 8px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #5f6368;
+        }
+        .error {
+            background: #fce8e6;
+            color: #c5221f;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        .footer {
+            padding: 15px 25px;
+            background: #f8f9fa;
+            font-size: 12px;
+            color: #5f6368;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+        }
+        @media (max-width: 700px) {
+            .buscador { flex-direction: column; }
+            button { width: 100%; }
+            th, td { font-size: 11px; padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📋 Buscador del Padrón - Capiata</h1>
+        <p>Más de 205.000 registros | Búsqueda por CI, Nombre y/o Apellido</p>
+    </div>
+    
+    <div class="buscador">
+        <div class="grupo">
+            <label>🔢 Cédula (CI)</label>
+            <input type="text" id="ci" placeholder="Ej: 1234567">
+        </div>
+        <div class="grupo">
+            <label>👤 Nombre(s)</label>
+            <input type="text" id="nombre" placeholder="Ej: Juan Carlos">
+        </div>
+        <div class="grupo">
+            <label>👪 Apellido(s)</label>
+            <input type="text" id="apellido" placeholder="Ej: González">
+        </div>
+        <div class="grupo">
+            <label>&nbsp;</label>
+            <button id="btnBuscar" onclick="buscar()">🔍 Buscar</button>
+        </div>
+    </div>
+    
+    <div class="resultados-info" id="infoPanel">
+        <span>📊 Ingresa criterios de búsqueda</span>
+        <span>⚡ Búsqueda directa en Google Sheets</span>
+    </div>
+    
+    <div class="tabla-container" id="tablaContainer">
+        <div class="loading">✨ Ingresa CI, nombre o apellido y presiona Buscar</div>
+    </div>
+    
+    <div class="footer">
+        Los datos se consultan en tiempo real desde Google Sheets | Solo se muestran resultados filtrados
+    </div>
+</div>
+
+<script>
+    // CONFIGURACIÓN
+    const SPREADSHEET_ID = '1DLICfJsygyIyl323QAO8WeH63djormn4';
+    const SHEET_NAME = 'datos_padron';
+    
+    // Índices de columnas (0-based)
+    const cols = {
+        CI: 0,
+        NOMBRE: 1,
+        APELLIDO: 2,
+        SEXO: 3,
+        FECHA_NAC: 4,
+        DIRECCION: 7,
+        VOTO_PLRA: 8,
+        VOTO_ANR: 9,
+        VOTO_GRAL: 10,
+        COMITE: 16,
+        LOCAL_GRAL: 17,
+        LOCAL_INTERNA: 18
+    };
+    
+    // Función para convertir fecha de Google Sheets (número serial) a Date
+    function serialToDate(serial) {
+        // Los números seriales de Google Sheets: días desde el 30/12/1899
+        const utcDays = serial - 25569;  // 25569 es la diferencia con Unix epoch
+        const ms = utcDays * 86400000;
+        return new Date(ms);
+    }
+    
+    // Función que recibe cualquier formato de fecha y devuelve {fechaStr, edad}
+    function procesarFecha(valor) {
+        let fechaDate = null;
+        
+        if (!valor) {
+            return { fechaStr: '', edad: '' };
+        }
+        
+        // Caso 1: Es un objeto de fecha de Google (con .value)
+        if (typeof valor === 'object' && valor !== null && valor.value) {
+            fechaDate = new Date(valor.value);
+        }
+        // Caso 2: Es un número serial (ej: 44562)
+        else if (typeof valor === 'number') {
+            fechaDate = serialToDate(valor);
+        }
+        // Caso 3: Es string numérico
+        else if (typeof valor === 'string' && !isNaN(parseFloat(valor))) {
+            fechaDate = serialToDate(parseFloat(valor));
+        }
+        // Caso 4: Es string formato fecha
+        else if (typeof valor === 'string') {
+            fechaDate = new Date(valor);
+            if (isNaN(fechaDate.getTime())) {
+                // Probar formato DD/MM/AAAA
+                const partes = valor.split('/');
+                if (partes.length === 3) {
+                    fechaDate = new Date(partes[2], partes[1] - 1, partes[0]);
+                }
+            }
+        }
+        
+        // Validar si es fecha válida
+        if (!fechaDate || isNaN(fechaDate.getTime())) {
+            return { fechaStr: valor, edad: '' };
+        }
+        
+        // Formatear fecha como DD/MM/AAAA
+        const dia = fechaDate.getDate().toString().padStart(2, '0');
+        const mes = (fechaDate.getMonth() + 1).toString().padStart(2, '0');
+        const anio = fechaDate.getFullYear();
+        const fechaStr = `${dia}/${mes}/${anio}`;
+        
+        // Calcular edad
+        const hoy = new Date();
+        let edad = hoy.getFullYear() - fechaDate.getFullYear();
+        const mesDiff = hoy.getMonth() - fechaDate.getMonth();
+        const diaDiff = hoy.getDate() - fechaDate.getDate();
+        if (mesDiff < 0 || (mesDiff === 0 && diaDiff < 0)) {
+            edad--;
+        }
+        
+        return { fechaStr, edad: edad.toString() };
+    }
+    
+    function construirQuery() {
+        const ci = document.getElementById('ci').value.trim();
+        const nombre = document.getElementById('nombre').value.trim().toUpperCase();
+        const apellido = document.getElementById('apellido').value.trim().toUpperCase();
+        
+        let condiciones = [];
+        
+        if (ci) {
+            condiciones.push(`A = '${ci}' OR A STARTS WITH '${ci}'`);
+        }
+        if (nombre) {
+            condiciones.push(`UPPER(B) CONTAINS '${nombre}'`);
+        }
+        if (apellido) {
+            condiciones.push(`UPPER(C) CONTAINS '${apellido}'`);
+        }
+        
+        if (condiciones.length === 0) {
+            return null;
+        }
+        
+        const selectCols = 'A,B,C,D,E,H,I,J,K,Q,R,S';
+        let query = `SELECT ${selectCols}`;
+        query += ` WHERE ${condiciones.join(' AND ')}`;
+        query += ` LIMIT 200`;
+        
+        return encodeURIComponent(query);
+    }
+    
+    async function buscar() {
+        const btn = document.getElementById('btnBuscar');
+        const infoPanel = document.getElementById('infoPanel');
+        const tablaContainer = document.getElementById('tablaContainer');
+        
+        const query = construirQuery();
+        if (!query) {
+            infoPanel.innerHTML = '<span>⚠️ Ingresa al menos un criterio de búsqueda (CI, nombre o apellido)</span><span></span>';
+            tablaContainer.innerHTML = '<div class="loading">🔍 Escribe algún dato para buscar</div>';
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.textContent = 'Buscando...';
+        infoPanel.innerHTML = '<span>🔄 Consultando Google Sheets...</span><span>Puede tomar unos segundos</span>';
+        tablaContainer.innerHTML = '<div class="loading"><div>⏳ Cargando resultados...</div><div style="font-size:12px; margin-top:10px;">Buscando entre más de 205 mil registros</div></div>';
+        
+        try {
+            const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&tq=${query}&sheet=${SHEET_NAME}`;
+            
+            const response = await fetch(url);
+            const text = await response.text();
+            
+            const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+            const data = JSON.parse(jsonStr);
+            
+            if (!data.table || !data.table.rows || data.table.rows.length === 0) {
+                tablaContainer.innerHTML = '<div class="loading">😞 No se encontraron resultados con esos criterios</div>';
+                infoPanel.innerHTML = `<span>📊 0 resultados encontrados</span><span>Intenta con otros términos</span>`;
+                return;
+            }
+            
+            const rows = data.table.rows;
+            const numResultados = rows.length;
+            
+            let html = `<table><thead><tr>
+                <th>CI</th><th>NOMBRE/S</th><th>APELLIDO/S</th><th>SEXO</th>
+                <th>FECHA NAC.</th><th>EDAD</th><th>DIRECCIÓN</th>
+                <th>VOTO PLRA</th><th>VOTO ANR</th><th>VOTO GRAL</th>
+                <th>COMITÉ</th><th>LUGAR VOTACIÓN GENERALES</th><th>LUGAR VOTACIÓN INTERNAS</th>
+            </tr></thead><tbody>`;
+            
+            for (const row of rows) {
+                const c = row.c;
+                
+                const ci = c[0]?.v ?? '';
+                const nombre = c[1]?.v ?? '';
+                const apellido = c[2]?.v ?? '';
+                const sexo = c[3]?.v ?? '';
+                const fechaRaw = c[4]?.v;
+                const direccion = c[5]?.v ?? '';
+                const votoPlra = c[6]?.v ?? '';
+                const votoAnr = c[7]?.v ?? '';
+                const votoGral = c[8]?.v ?? '';
+                const comite = c[9]?.v ?? '';
+                const localGral = c[10]?.v ?? '';
+                const localInterna = c[11]?.v ?? '';
+                
+                // Procesar fecha y edad CORRECTAMENTE
+                const { fechaStr, edad } = procesarFecha(fechaRaw);
+                
+                const votoSiNo = (v) => {
+                    const str = String(v || '').toLowerCase();
+                    if (str === 'si' || str === 'sí' || str === '1' || str === 'true' || str === 'x' || str === '✓') 
+                        return '<span class="voto-si">✓ SI</span>';
+                    if (str === 'no' || str === '0' || str === 'false' || str === '✗') 
+                        return '<span class="voto-no">✗ NO</span>';
+                    return str || '—';
+                };
+                
+                html += `<tr>
+                    <td>${escapeHtml(ci)}</td>
+                    <td>${escapeHtml(nombre)}</td>
+                    <td>${escapeHtml(apellido)}</td>
+                    <td>${escapeHtml(sexo)}</td>
+                    <td>${escapeHtml(fechaStr)}</td>
+                    <td>${edad}</td>
+                    <td>${escapeHtml(direccion)}</td>
+                    <td>${votoSiNo(votoPlra)}</td>
+                    <td>${votoSiNo(votoAnr)}</td>
+                    <td>${votoSiNo(votoGral)}</td>
+                    <td>${escapeHtml(comite)}</td>
+                    <td>${escapeHtml(localGral)}</td>
+                    <td>${escapeHtml(localInterna)}</td>
+                </td>`;
+            }
+            
+            html += '</tbody></table>';
+            tablaContainer.innerHTML = html;
+            infoPanel.innerHTML = `<span>📊 ${numResultados} resultados encontrados (máximo 200 por búsqueda)</span><span>⚡ Búsqueda optimizada sobre ${new Intl.NumberFormat().format(205482)} registros</span>`;
+            
+        } catch (error) {
+            console.error(error);
+            tablaContainer.innerHTML = `<div class="error">❌ Error al consultar: ${error.message}<br><br>Verifica que la hoja esté publicada y que el nombre de la pestaña sea exactamente "datos_padron"</div>`;
+            infoPanel.innerHTML = '<span>⚠️ Error en la consulta</span><span>Revisa la consola (F12)</span>';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🔍 Buscar';
+        }
+    }
+    
+    function escapeHtml(str) {
+        if (str === undefined || str === null) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Enter para buscar
+    ['ci', 'nombre', 'apellido'].forEach(id => {
+        document.getElementById(id).addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscar();
+        });
+    });
+</script>
+</body>
+</html>
